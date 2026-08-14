@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Stockify — Manifest</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0/umd/index.min.js" defer></script>
+<style>
+/* ============ TOKENS ============ */
+:root{
+  --ink:#1B2430;
+  --ink-soft:#3C4757;
+  --paper:#F6F3EC;
+  --paper-raised:#FFFFFF;
+  --line:#DCD5C4;
+  --amber:#F2A93B;
+  --amber-ink:#5C3D0A;
+  --teal:#2F6F6B;
+  --rust:#C1502E;
+  --shadow: 0 1px 2px rgba(27,36,48,.06), 0 6px 20px rgba(27,36,48,.06);
+  --radius: 14px;
+  --font-display:'Barlow Condensed', sans-serif;
+  --font-body:'Inter', sans-serif;
+  --font-mono:'IBM Plex Mono', monospace;
+}
+[data-theme="dark"]{
+  --ink:#F2EFE6;
+  --ink-soft:#C7C0AE;
+  --paper:#161A20;
+  --paper-raised:#1F252D;
+  --line:#2C333D;
+  --amber:#F2A93B;
+  --amber-ink:#1B1200;
+  --shadow: 0 1px 2px rgba(0,0,0,.3), 0 6px 20px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  font-family:var(--font-body);
+  background:var(--paper);
+  color:var(--ink);
+  min-height:100vh;
+  -webkit-tap-highlight-color:transparent;
+  transition:background .25s ease,color .25s ease;
+}
+h1,h2,h3{font-family:var(--font-display); font-weight:700; letter-spacing:.2px; margin:0;}
+.mono{font-family:var(--font-mono);}
+button{font-family:inherit; cursor:pointer;}
+input,select,textarea{font-family:inherit;}
+
+/* barcode divider — the signature element */
+.barcode-rule{
+  height:18px;
+  margin:0 0 18px 0;
+  background-image: repeating-linear-gradient(90deg,
+    var(--ink) 0px, var(--ink) 2px, transparent 2px, transparent 5px,
+    var(--ink) 5px, var(--ink) 7px, transparent 7px, transparent 9px,
+    var(--ink) 9px, var(--ink) 12px, transparent 12px, transparent 14px);
+  opacity:.16;
+}
+[data-theme="dark"] .barcode-rule{opacity:.28;}
+
+/* ============ APP SHELL ============ */
+#app{max-width:520px; margin:0 auto; min-height:100vh; display:flex; flex-direction:column; position:relative;}
+
+header.top{
+  padding:calc(env(safe-area-inset-top) + 14px) 18px 14px;
+  background:var(--ink);
+  color:var(--paper);
+  display:flex; align-items:center; gap:10px;
+  position:sticky; top:0; z-index:20;
+}
+header.top .mark{
+  width:34px;height:34px;border-radius:8px;background:var(--amber);
+  display:flex;align-items:center;justify-content:center;
+  color:var(--amber-ink); font-family:var(--font-mono); font-weight:600; font-size:13px;
+  transform:rotate(-3deg);
+}
+header.top h1{font-size:22px; color:var(--paper); flex:1;}
+header.top .sub{font-family:var(--font-mono); font-size:10px; letter-spacing:1.5px; text-transform:uppercase; opacity:.55; display:block; margin-top:-2px;}
+header.top button.icon-btn{background:transparent;border:none;color:var(--paper);opacity:.8;padding:8px;border-radius:8px;}
+header.top button.icon-btn:active{background:rgba(255,255,255,.12);}
+
+main{flex:1; padding:18px 18px 100px; overflow-x:hidden; overflow-y:auto; -webkit-overflow-scrolling:touch;}
+.ptr-indicator{
+  display:flex; align-items:center; justify-content:center;
+  height:0; overflow:hidden; opacity:0; transition:opacity .15s ease;
+  margin-bottom:0;
+}
+.ptr-indicator.visible{ opacity:1; }
+.ptr-spinner{
+  width:22px; height:22px; border-radius:50%;
+  border:2.5px solid var(--line); border-top-color:var(--amber);
+  animation:ptr-spin .7s linear infinite;
+}
+.ptr-spinner.settle{ animation:none; border-top-color:var(--teal); }
+@keyframes ptr-spin{ to{ transform:rotate(360deg); } }
+.view{display:none; animation:fadeIn .2s ease;}
+.view.active{display:block;}
+@keyframes fadeIn{from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:none;}}
+
+nav.tabbar{
+  position:fixed; bottom:0; left:0; right:0;
+  max-width:520px; margin:0 auto;
+  background:var(--paper-raised);
+  border-top:1px solid var(--line);
+  display:flex;
+  padding-bottom:env(safe-area-inset-bottom);
+  z-index:30;
+}
+nav.tabbar button{
+  flex:1; background:none; border:none; padding:10px 4px 8px;
+  display:flex; flex-direction:column; align-items:center; gap:3px;
+  color:var(--ink-soft); font-size:10.5px; font-weight:600; letter-spacing:.3px;
+}
+nav.tabbar button svg{width:21px;height:21px;}
+nav.tabbar button.active{color:var(--amber-ink);}
+[data-theme="dark"] nav.tabbar button.active{color:var(--amber);}
+nav.tabbar button.active svg{stroke:var(--amber);}
+
+/* ============ CARDS / COMPONENTS ============ */
+.card{
+  background:var(--paper-raised);
+  border:1px solid var(--line);
+  border-radius:var(--radius);
+  padding:16px;
+  box-shadow:var(--shadow);
+  margin-bottom:14px;
+}
+.stat-row{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px;}
+.stat-card{
+  background:var(--paper-raised); border:1px solid var(--line); border-radius:var(--radius);
+  padding:14px 16px; box-shadow:var(--shadow);
+}
+.stat-card .num{font-family:var(--font-display); font-size:30px; font-weight:800; line-height:1;}
+.stat-card .lbl{font-size:11px; text-transform:uppercase; letter-spacing:1px; color:var(--ink-soft); margin-top:4px; font-weight:600;}
+.stat-card.warn .num{color:var(--rust);}
+
+.btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  border-radius:10px; border:none; padding:13px 18px; font-weight:700; font-size:14.5px;
+  width:100%;
+}
+.btn-primary{background:var(--ink); color:var(--paper);}
+.btn-primary:active{opacity:.85;}
+.btn-amber{background:var(--amber); color:var(--amber-ink);}
+.btn-outline{background:transparent; border:1.5px solid var(--line); color:var(--ink);}
+.btn-danger{background:transparent; border:1.5px solid var(--rust); color:var(--rust);}
+.btn-sm{width:auto; padding:9px 14px; font-size:13px; border-radius:8px;}
+.btn-row{display:flex; gap:10px;}
+
+.field{margin-bottom:12px;}
+.field label{display:block; font-size:11.5px; font-weight:600; text-transform:uppercase; letter-spacing:.5px; color:var(--ink-soft); margin-bottom:6px;}
+.field input, .field select, .field textarea{
+  width:100%; padding:11px 12px; border-radius:9px; border:1.5px solid var(--line);
+  background:var(--paper); color:var(--ink); font-size:15px;
+}
+.field input:focus, .field select:focus, .field textarea:focus{outline:2px solid var(--amber); outline-offset:0; border-color:var(--amber);}
+
+.stamp{
+  display:inline-flex; align-items:center; gap:5px;
+  font-family:var(--font-mono); font-size:10.5px; font-weight:600; letter-spacing:.5px;
+  padding:3px 9px; border-radius:20px; text-transform:uppercase;
+  border:1.5px solid currentColor; transform:rotate(-2deg);
+}
+.stamp.ok{color:var(--teal);}
+.stamp.low{color:var(--amber-ink); background:rgba(242,169,59,.18);}
+.stamp.out{color:var(--rust);}
+
+.item-row{
+  display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid var(--line);
+}
+.item-row:last-child{border-bottom:none;}
+.item-row .swatch{
+  width:44px;height:44px;border-radius:10px; flex-shrink:0;
+  background:var(--paper); border:1.5px solid var(--line);
+  display:flex; align-items:center; justify-content:center; font-family:var(--font-display); font-weight:700; font-size:16px;
+}
+.item-row .info{flex:1; min-width:0;}
+.item-row .info .name{font-weight:600; font-size:14.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.item-row .info .meta{font-family:var(--font-mono); font-size:11px; color:var(--ink-soft); margin-top:2px;}
+.item-row .price{font-family:var(--font-mono); font-weight:600; font-size:14px; text-align:right; flex-shrink:0;}
+
+.empty{
+  text-align:center; padding:40px 20px; color:var(--ink-soft);
+}
+.empty .big{font-size:40px; margin-bottom:10px;}
+.empty h3{font-size:19px; margin-bottom:6px; color:var(--ink);}
+.empty p{font-size:13.5px; margin:0 0 16px;}
+
+.section-title{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;}
+.section-title h2{font-size:20px;}
+.eyebrow{font-family:var(--font-mono); font-size:10.5px; letter-spacing:1.5px; text-transform:uppercase; color:var(--amber-ink); background:rgba(242,169,59,.2); display:inline-block; padding:3px 8px; border-radius:6px; margin-bottom:6px;}
+
+/* modal */
+.modal-backdrop{
+  position:fixed; inset:0; background:rgba(27,36,48,.5); z-index:50;
+  display:none; align-items:flex-end; justify-content:center;
+}
+.modal-backdrop.active{display:flex;}
+.modal{
+  background:var(--paper-raised); width:100%; max-width:520px;
+  border-radius:20px 20px 0 0; padding:20px 18px calc(env(safe-area-inset-bottom) + 20px);
+  max-height:88vh; overflow-y:auto;
+  animation:slideUp .22s ease;
+}
+@keyframes slideUp{from{transform:translateY(30px); opacity:0;} to{transform:none; opacity:1;}}
+.modal-handle{width:38px;height:4px;background:var(--line);border-radius:3px;margin:0 auto 14px;}
+.modal-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;}
+.modal-head h3{font-size:21px;}
+.modal-head button{background:none; border:none; color:var(--ink-soft); font-size:22px; line-height:1; padding:4px;}
+
+.toast-wrap{position:fixed; top:calc(env(safe-area-inset-top) + 10px); left:0; right:0; display:flex; flex-direction:column; align-items:center; gap:8px; z-index:100; pointer-events:none;}
+.toast{
+  background:var(--ink); color:var(--paper); padding:11px 18px; border-radius:10px;
+  font-size:13.5px; font-weight:600; box-shadow:var(--shadow); display:flex; align-items:center; gap:8px;
+  animation:toastIn .18s ease;
+}
+.toast.err{background:var(--rust);}
+.toast.ok{background:var(--teal);}
+@keyframes toastIn{from{transform:translateY(-10px); opacity:0;} to{transform:none; opacity:1;}}
+
+/* scanner */
+#scannerWrap{position:fixed; inset:0; background:#000; z-index:60; display:none; flex-direction:column;}
+#scannerWrap.active{display:flex;}
+#scannerVideo{flex:1; width:100%; object-fit:cover;}
+.scan-frame{
+  position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+  width:78%; max-width:340px; height:150px; pointer-events:none;
+}
+.scan-frame::before,.scan-frame::after{content:'';position:absolute;width:32px;height:32px;border-color:var(--amber);border-style:solid;}
+.scan-frame::before{top:0;left:0;border-width:3px 0 0 3px;}
+.scan-frame::after{bottom:0;right:0;border-width:0 3px 3px 0;}
+.scan-corner-2::before{top:0;right:0;left:auto;border-width:3px 3px 0 0;}
+.scan-corner-2::after{bottom:0;left:0;right:auto;border-width:0 0 3px 3px;}
+.scanner-top{position:absolute; top:0; left:0; right:0; padding:calc(env(safe-area-inset-top) + 14px) 16px 14px; display:flex; align-items:center; justify-content:space-between; background:linear-gradient(rgba(0,0,0,.7),transparent);}
+.scanner-top button{background:rgba(255,255,255,.15); border:none; color:#fff; width:38px;height:38px;border-radius:10px; font-size:18px;}
+.scanner-hint{position:absolute; bottom:calc(env(safe-area-inset-bottom) + 28px); left:0; right:0; text-align:center; color:#fff; font-size:13px; padding:0 20px;}
+.scanner-hint .bc{font-family:var(--font-mono); font-size:16px; margin-top:6px; letter-spacing:1px;}
+
+.tabs-inline{display:flex; gap:8px; margin-bottom:14px; overflow-x:auto; padding-bottom:2px;}
+.tabs-inline button{flex-shrink:0; padding:8px 14px; border-radius:20px; border:1.5px solid var(--line); background:var(--paper-raised); font-size:13px; font-weight:600; color:var(--ink-soft);}
+.tabs-inline button.active{background:var(--ink); color:var(--paper); border-color:var(--ink);}
+
+.checklist-row{display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--line);}
+.checklist-row:last-child{border-bottom:none;}
+.checklist-row input[type=checkbox]{width:19px;height:19px; accent-color:var(--amber);}
+
+::-webkit-scrollbar{width:0;height:0;}
+
+/* lock screen */
+#lockScreen{position:fixed; inset:0; background:var(--ink); z-index:200; display:flex; flex-direction:column; align-items:center; justify-content:center; color:var(--paper); padding:24px;}
+#lockScreen.hidden{display:none;}
+#lockScreen .mark{width:64px;height:64px;border-radius:14px;background:var(--amber); display:flex;align-items:center;justify-content:center; color:var(--amber-ink); font-family:var(--font-mono); font-weight:700; font-size:22px; transform:rotate(-4deg); margin-bottom:18px;}
+#lockScreen h1{font-size:30px; margin-bottom:4px;}
+#lockScreen p{color:rgba(246,243,236,.6); font-size:13.5px; margin:0 0 26px;}
+#pinDots{display:flex; gap:14px; margin-bottom:26px;}
+#pinDots span{width:14px;height:14px;border-radius:50%; border:2px solid rgba(246,243,236,.4);}
+#pinDots span.filled{background:var(--amber); border-color:var(--amber);}
+.keypad{display:grid; grid-template-columns:repeat(3,64px); gap:14px;}
+.keypad button{width:64px;height:64px;border-radius:50%; background:rgba(246,243,236,.08); border:1px solid rgba(246,243,236,.15); color:var(--paper); font-size:22px; font-family:var(--font-mono);}
+.keypad button:active{background:rgba(246,243,236,.2);}
+#lockError{color:var(--rust); font-size:12.5px; height:16px; margin-top:14px;}
+</style>
+</head>
+<body>
+
+<div id="lockScreen">
+  <div class="mark">SS</div>
+  <h1 id="lockTitle">Set a PIN</h1>
+  <p id="lockSub">Choose a 4-digit PIN to protect this app</p>
+  <div id="pinDots"><span></span><span></span><span></span><span></span></div>
+  <div class="keypad" id="keypad"></div>
+  <div id="lockError"></div>
+</div>
+
+<div id="app">
+  <header class="top">
+    <div class="mark">SS</div>
+    <div>
+      <h1>Stockify</h1>
+      <span class="sub">Warehouse Manifest</span>
+    </div>
+    <button class="icon-btn" id="themeToggle" title="Toggle theme">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+    </button>
+  </header>
+
+  <main>
+    <div class="toast-wrap" id="toastWrap"></div>
+
+    <!-- HOME -->
+    <section class="view active" id="view-home">
+      <div class="eyebrow" id="dateEyebrow">Today</div>
+      <div class="section-title"><h2>Overview</h2></div>
+      <div class="stat-row">
+        <div class="stat-card"><div class="num" id="statCount">0</div><div class="lbl">Items tracked</div></div>
+        <div class="stat-card"><div class="num" id="statValue">$0</div><div class="lbl">Stock value</div></div>
+        <div class="stat-card warn"><div class="num" id="statLow">0</div><div class="lbl">Low stock</div></div>
+        <div class="stat-card"><div class="num" id="statCats">0</div><div class="lbl">Categories</div></div>
+      </div>
+
+      <div class="barcode-rule"></div>
+
+      <div class="section-title"><h2>Quick actions</h2></div>
+      <div class="btn-row" style="margin-bottom:10px;">
+        <button class="btn btn-amber" onclick="openScanner('lookup')">Scan item</button>
+        <button class="btn btn-primary" onclick="openItemModal()">Add item</button>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-outline" onclick="switchView('stocktake')">Start stocktake</button>
+        <button class="btn btn-outline" onclick="switchView('labels')">Price labels</button>
+      </div>
+
+      <div class="barcode-rule" style="margin-top:22px;"></div>
+
+      <div class="section-title"><h2>Low stock</h2></div>
+      <div class="card" id="lowStockCard"></div>
+
+      <div class="section-title"><h2>Recent activity</h2></div>
+      <div class="card" id="activityCard"></div>
+    </section>
+
+    <!-- INVENTORY -->
+    <section class="view" id="view-inventory">
+      <div class="section-title"><h2>Inventory</h2><button class="btn btn-amber btn-sm" onclick="openItemModal()">+ Add</button></div>
+      <div class="field" style="margin-bottom:10px;">
+        <input type="text" id="searchInput" placeholder="Search name, SKU, barcode…">
+      </div>
+      <div class="tabs-inline" id="categoryTabs"></div>
+      <div id="ptrIndicator" class="ptr-indicator"><span class="ptr-spinner"></span></div>
+      <div class="card" id="inventoryList"></div>
+    </section>
+
+    <!-- STOCKTAKE -->
+    <section class="view" id="view-stocktake">
+      <div class="section-title"><h2>Stocktake</h2></div>
+      <div id="stocktakeIdle">
+        <div class="card">
+          <p style="font-size:13.5px;color:var(--ink-soft);margin:0 0 14px;">Start a count session, scan items as you go, and see what's over or under system stock the moment you close it out.</p>
+          <button class="btn btn-primary" onclick="startStocktake()">Start new stocktake</button>
+        </div>
+        <div class="section-title"><h2>Past sessions</h2></div>
+        <div class="card" id="stocktakeHistory"></div>
+      </div>
+      <div id="stocktakeActive" style="display:none;">
+        <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <div class="eyebrow" id="stActiveLabel">Session open</div>
+            <div class="mono" style="font-size:12px;color:var(--ink-soft);" id="stActiveTime"></div>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="closeStocktake()">Close session</button>
+        </div>
+        <div class="btn-row" style="margin-bottom:14px;">
+          <button class="btn btn-amber" onclick="openScanner('stocktake')">Scan to count</button>
+          <button class="btn btn-outline" onclick="manualStocktakeEntry()">Manual entry</button>
+        </div>
+        <div class="card" id="stocktakeTally"></div>
+      </div>
+    </section>
+
+    <!-- LABELS -->
+    <section class="view" id="view-labels">
+      <div class="section-title"><h2>Price labels</h2></div>
+      <div class="card">
+        <p style="font-size:13.5px;color:var(--ink-soft);margin:0 0 12px;">Select items below, then export a label sheet to Excel for printing.</p>
+        <div class="btn-row">
+          <button class="btn btn-amber" id="exportLabelsBtn" onclick="exportLabels()">Export selected</button>
+          <button class="btn btn-outline" onclick="toggleSelectAllLabels()">Select all</button>
+        </div>
+      </div>
+      <div class="card" id="labelPicker"></div>
+    </section>
+
+    <!-- STATS -->
+    <section class="view" id="view-stats">
+      <div class="section-title"><h2>Statistics</h2></div>
+      <div class="card"><h3 style="font-size:15px;margin-bottom:10px;">Stock by category</h3><canvas id="chartCategory" height="200"></canvas></div>
+      <div class="card"><h3 style="font-size:15px;margin-bottom:10px;">Value by category</h3><canvas id="chartValue" height="200"></canvas></div>
+      <div class="card"><h3 style="font-size:15px;margin-bottom:10px;">Stock health</h3><canvas id="chartHealth" height="200"></canvas></div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section class="view" id="view-settings">
+      <div class="section-title"><h2>Settings</h2></div>
+      <div class="card">
+        <div class="field"><label>Currency symbol</label><input type="text" id="settingCurrency" maxlength="3"></div>
+        <div class="field"><label>Default low-stock threshold</label><input type="number" id="settingThreshold" min="0"></div>
+        <button class="btn btn-primary btn-sm" onclick="saveSettings()">Save settings</button>
+      </div>
+      <div class="section-title"><h2>Categories</h2></div>
+      <div class="card">
+        <div id="categoryManageList" style="margin-bottom:12px;"></div>
+        <div class="btn-row">
+          <input type="text" id="newCategoryInput" placeholder="New category name" style="flex:1;padding:11px 12px;border-radius:9px;border:1.5px solid var(--line);background:var(--paper);color:var(--ink);">
+          <button class="btn btn-amber btn-sm" onclick="addCategory()">Add</button>
+        </div>
+      </div>
+      <div class="section-title"><h2>Data</h2></div>
+      <div class="card">
+        <div class="btn-row" style="margin-bottom:10px;">
+          <button class="btn btn-outline" onclick="exportAllData()">Export all (Excel)</button>
+        </div>
+        <button class="btn btn-danger" onclick="confirmResetPin()">Reset PIN</button>
+      </div>
+    </section>
+  </main>
+
+  <nav class="tabbar">
+    <button class="tab-btn active" data-view="home" onclick="switchView('home')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></svg>
+      Home
+    </button>
+    <button class="tab-btn" data-view="inventory" onclick="switchView('inventory')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a4 4 0 018 0v2"/></svg>
+      Inventory
+    </button>
+    <button class="tab-btn" data-view="stocktake" onclick="switchView('stocktake')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      Stocktake
+    </button>
+    <button class="tab-btn" data-view="stats" onclick="switchView('stats')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6"/><rect x="12" y="8" width="3" height="10"/><rect x="17" y="5" width="3" height="13"/></svg>
+      Stats
+    </button>
+    <button class="tab-btn" data-view="settings" onclick="switchView('settings')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.6 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      Settings
+    </button>
+  </nav>
+</div>
+
+<!-- ITEM MODAL -->
+<div class="modal-backdrop" id="itemModalBackdrop">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-head"><h3 id="itemModalTitle">Add item</h3><button onclick="closeModal('itemModalBackdrop')">×</button></div>
+    <input type="hidden" id="itemId">
+    <div class="field"><label>Name</label><input type="text" id="itemName"></div>
+    <div class="field"><label>Barcode / SKU</label>
+      <div style="display:flex; gap:8px;">
+        <input type="text" id="itemBarcode" style="flex:1;">
+        <button class="btn btn-outline btn-sm" onclick="openScanner('form')">Scan</button>
+      </div>
+    </div>
+    <div class="field"><label>Category</label><select id="itemCategory"></select></div>
+    <div style="display:flex; gap:10px;">
+      <div class="field" style="flex:1;"><label>Stock</label><input type="number" id="itemStock" min="0"></div>
+      <div class="field" style="flex:1;"><label>Price</label><input type="number" id="itemPrice" min="0" step="0.01"></div>
+    </div>
+    <div class="field"><label>Low stock alert below</label><input type="number" id="itemThreshold" min="0"></div>
+    <div class="field"><label>Notes</label><textarea id="itemNotes" rows="2"></textarea></div>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="saveItem()">Save item</button>
+      <button class="btn btn-danger" id="deleteItemBtn" style="display:none;" onclick="deleteItem()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- SCANNER -->
+<div id="scannerWrap">
+  <video id="scannerVideo" autoplay muted playsinline></video>
+  <div class="scan-frame scan-corner-2"></div>
+  <div class="scanner-top">
+    <button onclick="closeScanner()">×</button>
+    <button onclick="toggleTorch()" id="torchBtn">⚡</button>
+  </div>
+  <div class="scanner-hint">Position the barcode inside the frame<div class="bc" id="scanLastResult"></div></div>
+</div>
+
+<script>
+/* ============================================================
+   STOCKIFY — data layer
+   ============================================================ */
+const DEFAULT_CATEGORIES = ['General','Beverages','Snacks','Household','Electronics','Produce'];
+let state = {
+  items: [],
+  categories: DEFAULT_CATEGORIES.slice(),
+  stocktakes: [],
+  activity: [],
+  settings: { currency:'$', defaultThreshold:5, pin:null, theme:'light' }
+};
+let ui = { invCategory:'ALL', invSearch:'', scannerContext:null, activeStocktake:null, labelSelection:new Set(), zxingReader:null, currentStream:null, torchOn:false, pinBuffer:'' };
+
+async function storageGet(key, fallback){
+  try{ const raw = localStorage.getItem('stockify:'+key); return raw!==null ? JSON.parse(raw) : fallback; }
+  catch(e){ return fallback; }
+}
+async function storageSet(key, value){
+  try{ localStorage.setItem('stockify:'+key, JSON.stringify(value)); }catch(e){ console.error('storage set failed', e); }
+}
+
+async function loadState(){
+  state.items = await storageGet('items', []);
+  state.categories = await storageGet('categories', DEFAULT_CATEGORIES.slice());
+  state.stocktakes = await storageGet('stocktakes', []);
+  state.activity = await storageGet('activity', []);
+  state.settings = await storageGet('settings', state.settings);
+}
+async function saveItems(){ await storageSet('items', state.items); }
+async function saveCategories(){ await storageSet('categories', state.categories); }
+async function saveStocktakes(){ await storageSet('stocktakes', state.stocktakes); }
+async function saveActivity(){ await storageSet('activity', state.activity); }
+async function saveSettingsToStore(){ await storageSet('settings', state.settings); }
+
+function logActivity(text){
+  state.activity.unshift({ text, at: Date.now() });
+  state.activity = state.activity.slice(0, 30);
+  saveActivity();
+}
+
+/* ============================================================
+   TOASTS
+   ============================================================ */
+function toast(msg, type=''){
+  const wrap = document.getElementById('toastWrap');
+  const el = document.createElement('div');
+  el.className = 'toast' + (type ? ' '+type : '');
+  el.textContent = msg;
+  wrap.appendChild(el);
+  setTimeout(()=>{ el.style.opacity='0'; el.style.transition='opacity .25s'; setTimeout(()=>el.remove(),250); }, 2200);
+}
+
+/* ============================================================
+   LOCK SCREEN / PIN
+   ============================================================ */
+function buildKeypad(){
+  const pad = document.getElementById('keypad');
+  pad.innerHTML='';
+  ['1','2','3','4','5','6','7','8','9','','0','⌫'].forEach(k=>{
+    const b = document.createElement('button');
+    if(k===''){ b.style.visibility='hidden'; }
+    else { b.textContent=k; b.onclick=()=>pinKey(k); }
+    pad.appendChild(b);
+  });
+}
+function pinKey(k){
+  if(k==='⌫'){ ui.pinBuffer = ui.pinBuffer.slice(0,-1); }
+  else if(ui.pinBuffer.length<4){ ui.pinBuffer += k; }
+  renderPinDots();
+  if(ui.pinBuffer.length===4) setTimeout(submitPin, 120);
+}
+function renderPinDots(){
+  document.querySelectorAll('#pinDots span').forEach((d,i)=> d.classList.toggle('filled', i<ui.pinBuffer.length));
+}
+let pinSetupStage = null;
+function submitPin(){
+  const errEl = document.getElementById('lockError');
+  errEl.textContent='';
+  if(!state.settings.pin){
+    if(!pinSetupStage){
+      pinSetupStage = ui.pinBuffer;
+      ui.pinBuffer='';
+      renderPinDots();
+      document.getElementById('lockTitle').textContent='Confirm PIN';
+      document.getElementById('lockSub').textContent='Enter it once more';
+      return;
+    } else {
+      if(pinSetupStage === ui.pinBuffer){
+        state.settings.pin = pinSetupStage;
+        saveSettingsToStore();
+        unlockApp();
+      } else {
+        errEl.textContent="PIN didn't match — try again";
+        pinSetupStage=null; ui.pinBuffer='';
+        document.getElementById('lockTitle').textContent='Set a PIN';
+        document.getElementById('lockSub').textContent='Choose a 4-digit PIN to protect this app';
+        renderPinDots();
+      }
+      return;
+    }
+  }
+  if(ui.pinBuffer === state.settings.pin){
+    unlockApp();
+  } else {
+    errEl.textContent='Incorrect PIN';
+    ui.pinBuffer='';
+    renderPinDots();
+  }
+}
+function unlockApp(){
+  document.getElementById('lockScreen').classList.add('hidden');
+}
+function confirmResetPin(){
+  if(confirm('Reset your PIN? You will set a new one immediately.')){
+    state.settings.pin = null;
+    saveSettingsToStore();
+    ui.pinBuffer=''; pinSetupStage=null;
+    document.getElementById('lockTitle').textContent='Set a PIN';
+    document.getElementById('lockSub').textContent='Choose a 4-digit PIN to protect this app';
+    renderPinDots();
+    document.getElementById('lockScreen').classList.remove('hidden');
+    toast('PIN reset — set a new one');
+  }
+}
+
+/* ============================================================
+   THEME
+   ============================================================ */
+function applyTheme(){
+  document.documentElement.setAttribute('data-theme', state.settings.theme);
+}
+document.getElementById('themeToggle').onclick = ()=>{
+  state.settings.theme = state.settings.theme==='light' ? 'dark' : 'light';
+  applyTheme();
+  saveSettingsToStore();
+};
+
+/* ============================================================
+   NAVIGATION
+   ============================================================ */
+function switchView(name){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('view-'+name).classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(b=> b.classList.toggle('active', b.dataset.view===name));
+  if(name==='inventory') renderInventory();
+  if(name==='home') renderHome();
+  if(name==='labels') renderLabelPicker();
+  if(name==='stats') renderStats();
+  if(name==='settings') renderSettings();
+  if(name==='stocktake') renderStocktakeView();
+}
+
+/* ============================================================
+   HOME
+   ============================================================ */
+function money(n){ return state.settings.currency + Number(n||0).toFixed(2); }
+function renderHome(){
+  document.getElementById('dateEyebrow').textContent = new Date().toLocaleDateString(undefined,{weekday:'long', month:'short', day:'numeric'});
+  const items = state.items;
+  document.getElementById('statCount').textContent = items.length;
+  document.getElementById('statValue').textContent = money(items.reduce((s,i)=>s+i.stock*i.price,0));
+  const low = items.filter(i=> i.stock<=i.threshold && i.stock>0);
+  const out = items.filter(i=> i.stock<=0);
+  document.getElementById('statLow').textContent = low.length + out.length;
+  document.getElementById('statCats').textContent = new Set(items.map(i=>i.category)).size;
+
+  const lowCard = document.getElementById('lowStockCard');
+  const lowAndOut = [...out, ...low].slice(0,5);
+  lowCard.innerHTML = lowAndOut.length ? lowAndOut.map(i=>`
+    <div class="item-row">
+      <div class="swatch">${i.name.slice(0,2).toUpperCase()}</div>
+      <div class="info"><div class="name">${escapeHtml(i.name)}</div><div class="meta">${i.stock} in stock</div></div>
+      <span class="stamp ${i.stock<=0?'out':'low'}">${i.stock<=0?'Out':'Low'}</span>
+    </div>`).join('') : `<div class="empty" style="padding:16px;"><p>Everything's well stocked.</p></div>`;
+
+  const actCard = document.getElementById('activityCard');
+  actCard.innerHTML = state.activity.length ? state.activity.slice(0,6).map(a=>`
+    <div class="item-row"><div class="info"><div class="name" style="font-weight:500;">${escapeHtml(a.text)}</div><div class="meta">${timeAgo(a.at)}</div></div></div>
+  `).join('') : `<div class="empty" style="padding:16px;"><p>No activity yet — add your first item.</p></div>`;
+}
+function timeAgo(ts){
+  const s = Math.floor((Date.now()-ts)/1000);
+  if(s<60) return 'just now';
+  if(s<3600) return Math.floor(s/60)+'m ago';
+  if(s<86400) return Math.floor(s/3600)+'h ago';
+  return Math.floor(s/86400)+'d ago';
+}
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* ============================================================
+   INVENTORY
+   ============================================================ */
+function renderCategoryTabs(){
+  const wrap = document.getElementById('categoryTabs');
+  const cats = ['ALL', ...state.categories];
+  wrap.innerHTML = cats.map(c=>`<button class="${ui.invCategory===c?'active':''}" onclick="setInvCategory('${escapeHtml(c)}')">${c==='ALL'?'All':escapeHtml(c)}</button>`).join('');
+}
+function setInvCategory(c){ ui.invCategory=c; renderCategoryTabs(); renderInventory(); }
+
+let searchTimer=null;
+document.getElementById('searchInput').addEventListener('input', (e)=>{
+  ui.invSearch = e.target.value;
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(renderInventory, 250);
+});
+
+function filteredItems(){
+  const q = ui.invSearch.trim().toLowerCase();
+  return state.items.filter(i=>{
+    if(ui.invCategory!=='ALL' && i.category!==ui.invCategory) return false;
+    if(!q) return true;
+    return i.name.toLowerCase().includes(q) || (i.barcode||'').toLowerCase().includes(q);
+  });
+}
+function renderInventory(){
+  renderCategoryTabs();
+  const list = document.getElementById('inventoryList');
+  const items = filteredItems();
+  if(!items.length){
+    list.innerHTML = `<div class="empty"><div class="big">📦</div><h3>No items here</h3><p>Try a different search, or add your first item.</p><button class="btn btn-amber" onclick="openItemModal()">Add item</button></div>`;
+    return;
+  }
+  list.innerHTML = items.map(i=>`
+    <div class="item-row" onclick="openItemModal('${i.id}')" style="cursor:pointer;">
+      <div class="swatch">${i.name.slice(0,2).toUpperCase()}</div>
+      <div class="info"><div class="name">${escapeHtml(i.name)}</div><div class="meta">${i.stock} in stock · ${escapeHtml(i.category)}</div></div>
+      <div class="price">${money(i.price)}</div>
+    </div>`).join('');
+}
+
+function openItemModal(id){
+  const sel = document.getElementById('itemCategory');
+  sel.innerHTML = state.categories.map(c=>`<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('');
+  const del = document.getElementById('deleteItemBtn');
+  if(id){
+    const item = state.items.find(i=>i.id===id);
+    document.getElementById('itemModalTitle').textContent='Edit item';
+    document.getElementById('itemId').value = item.id;
+    document.getElementById('itemName').value = item.name;
+    document.getElementById('itemBarcode').value = item.barcode||'';
+    sel.value = item.category;
+    document.getElementById('itemStock').value = item.stock;
+    document.getElementById('itemPrice').value = item.price;
+    document.getElementById('itemThreshold').value = item.threshold;
+    document.getElementById('itemNotes').value = item.notes||'';
+    del.style.display='block';
+  } else {
+    document.getElementById('itemModalTitle').textContent='Add item';
+    document.getElementById('itemId').value='';
+    ['itemName','itemBarcode','itemNotes'].forEach(id2=>document.getElementById(id2).value='');
+    document.getElementById('itemStock').value=0;
+    document.getElementById('itemPrice').value='';
+    document.getElementById('itemThreshold').value = state.settings.defaultThreshold;
+    del.style.display='none';
+  }
+  openModal('itemModalBackdrop');
+}
+async function saveItem(){
+  const name = document.getElementById('itemName').value.trim();
+  if(!name){ toast('Item needs a name','err'); return; }
+  const id = document.getElementById('itemId').value;
+  const data = {
+    name,
+    barcode: document.getElementById('itemBarcode').value.trim(),
+    category: document.getElementById('itemCategory').value,
+    stock: Number(document.getElementById('itemStock').value)||0,
+    price: Number(document.getElementById('itemPrice').value)||0,
+    threshold: Number(document.getElementById('itemThreshold').value)||0,
+    notes: document.getElementById('itemNotes').value.trim(),
+  };
+  if(id){
+    const item = state.items.find(i=>i.id===id);
+    Object.assign(item, data);
+    logActivity(`Updated ${name}`);
+  } else {
+    data.id = 'itm_'+Date.now()+Math.random().toString(36).slice(2,7);
+    data.createdAt = Date.now();
+    state.items.push(data);
+    logActivity(`Added ${name}`);
+  }
+  await saveItems();
+  closeModal('itemModalBackdrop');
+  renderInventory(); renderHome();
+  toast('Item saved','ok');
+}
+async function deleteItem(){
+  const id = document.getElementById('itemId').value;
+  const item = state.items.find(i=>i.id===id);
+  if(!confirm(`Delete "${item.name}"?`)) return;
+  state.items = state.items.filter(i=>i.id!==id);
+  await saveItems();
+  logActivity(`Deleted ${item.name}`);
+  closeModal('itemModalBackdrop');
+  renderInventory(); renderHome();
+  toast('Item deleted');
+}
+
+/* ============================================================
+   MODALS
+   ============================================================ */
+function openModal(id){ document.getElementById(id).classList.add('active'); }
+function closeModal(id){ document.getElementById(id).classList.remove('active'); }
+
+/* ============================================================
+   SCANNER (ZXing)
+   ============================================================ */
+async function openScanner(context){
+  ui.scannerContext = context;
+  document.getElementById('scannerWrap').classList.add('active');
+  document.getElementById('scanLastResult').textContent='';
+  try{
+    ui.currentStream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:'environment' } });
+    const video = document.getElementById('scannerVideo');
+    video.srcObject = ui.currentStream;
+    if(!ui.zxingReader) ui.zxingReader = new ZXing.BrowserMultiFormatReader();
+    ui.zxingReader.decodeFromVideoElement(video, (result, err)=>{
+      if(result){ handleScanResult(result.getText()); }
+    });
+  }catch(e){
+    toast('Camera unavailable — use manual entry','err');
+    closeScanner();
+  }
+}
+function handleScanResult(code){
+  document.getElementById('scanLastResult').textContent = code;
+  if(navigator.vibrate) navigator.vibrate(60);
+  setTimeout(()=>{
+    if(ui.scannerContext==='form'){
+      document.getElementById('itemBarcode').value = code;
+      closeScanner();
+    } else if(ui.scannerContext==='lookup'){
+      closeScanner();
+      const item = state.items.find(i=>i.barcode===code);
+      if(item){ openItemModal(item.id); }
+      else { toast('No item with that barcode yet'); openItemModal(); document.getElementById('itemBarcode').value = code; }
+    } else if(ui.scannerContext==='stocktake'){
+      tallyStocktakeScan(code);
+    }
+  }, 250);
+}
+function closeScanner(){
+  document.getElementById('scannerWrap').classList.remove('active');
+  try{ if(ui.zxingReader) ui.zxingReader.reset(); }catch(e){}
+  if(ui.currentStream){ ui.currentStream.getTracks().forEach(t=>t.stop()); ui.currentStream=null; }
+  const video = document.getElementById('scannerVideo');
+  video.pause(); video.srcObject=null;
+  ui.torchOn=false;
+}
+async function toggleTorch(){
+  if(!ui.currentStream) return;
+  const track = ui.currentStream.getVideoTracks()[0];
+  const caps = track.getCapabilities ? track.getCapabilities() : {};
+  if(!caps.torch){ toast('Flashlight not supported on this device'); return; }
+  ui.torchOn = !ui.torchOn;
+  try{ await track.applyConstraints({ advanced:[{ torch: ui.torchOn }] }); }catch(e){}
+}
+
+/* ============================================================
+   STOCKTAKE
+   ============================================================ */
+function renderStocktakeView(){
+  const active = state.stocktakes.find(s=>s.id===ui.activeStocktake);
+  document.getElementById('stocktakeIdle').style.display = active ? 'none':'block';
+  document.getElementById('stocktakeActive').style.display = active ? 'block':'none';
+  if(active){
+    document.getElementById('stActiveLabel').textContent = 'Session open · '+active.counts.length+' scanned';
+    document.getElementById('stActiveTime').textContent = new Date(active.startedAt).toLocaleString();
+    renderStocktakeTally(active);
+  } else {
+    const hist = document.getElementById('stocktakeHistory');
+    const closed = state.stocktakes.filter(s=>s.closedAt);
+    hist.innerHTML = closed.length ? closed.slice(0,10).map(s=>`
+      <div class="item-row"><div class="info"><div class="name">${new Date(s.startedAt).toLocaleDateString()}</div><div class="meta">${s.counts.length} items counted · ${s.discrepancies||0} discrepancies</div></div></div>
+    `).join('') : `<div class="empty" style="padding:16px;"><p>No past sessions yet.</p></div>`;
+  }
+}
+async function startStocktake(){
+  const s = { id:'st_'+Date.now(), startedAt: Date.now(), counts:[], closedAt:null };
+  state.stocktakes.unshift(s);
+  ui.activeStocktake = s.id;
+  await saveStocktakes();
+  logActivity('Started a stocktake session');
+  renderStocktakeView();
+}
+function tallyStocktakeScan(barcode){
+  const active = state.stocktakes.find(s=>s.id===ui.activeStocktake);
+  if(!active) return;
+  const item = state.items.find(i=>i.barcode===barcode);
+  let entry = active.counts.find(c=>c.barcode===barcode);
+  if(entry){ entry.counted += 1; }
+  else { active.counts.push({ barcode, name: item?item.name:'Unknown item', counted:1, system: item?item.stock:null }); }
+  saveStocktakes();
+  renderStocktakeTally(active);
+  toast((item?item.name:'Unknown item')+' +1');
+}
+function manualStocktakeEntry(){
+  const active = state.stocktakes.find(s=>s.id===ui.activeStocktake);
+  if(!active) return;
+  const barcode = prompt('Enter barcode/SKU:');
+  if(!barcode) return;
+  const qty = Number(prompt('Quantity counted:','1'))||1;
+  const item = state.items.find(i=>i.barcode===barcode);
+  let entry = active.counts.find(c=>c.barcode===barcode);
+  if(entry){ entry.counted += qty; }
+  else { active.counts.push({ barcode, name: item?item.name:'Unknown item', counted:qty, system: item?item.stock:null }); }
+  saveStocktakes();
+  renderStocktakeTally(active);
+}
+function renderStocktakeTally(active){
+  const el = document.getElementById('stocktakeTally');
+  el.innerHTML = active.counts.length ? active.counts.map(c=>{
+    const diff = c.system==null ? null : c.counted - c.system;
+    return `<div class="item-row">
+      <div class="info"><div class="name">${escapeHtml(c.name)}</div><div class="meta mono">${c.barcode||'—'}</div></div>
+      <div style="text-align:right;">
+        <div class="mono" style="font-weight:600;">${c.counted}${c.system!=null?' / '+c.system:''}</div>
+        ${diff!==null ? `<span class="stamp ${diff===0?'ok':(diff<0?'out':'low')}">${diff>0?'+':''}${diff}</span>` : ''}
+      </div>
+    </div>`;
+  }).join('') : `<div class="empty" style="padding:16px;"><p>Scan or enter items to start counting.</p></div>`;
+}
+async function closeStocktake(){
+  const active = state.stocktakes.find(s=>s.id===ui.activeStocktake);
+  if(!active) return;
+  if(!confirm('Close this stocktake session?')) return;
+  active.closedAt = Date.now();
+  active.discrepancies = active.counts.filter(c=> c.system!=null && c.counted!==c.system).length;
+  ui.activeStocktake = null;
+  await saveStocktakes();
+  logActivity('Closed a stocktake session');
+  renderStocktakeView();
+  exportStocktake(active);
+}
+/* ============================================================
+   FILE EXPORT — works in the Android app AND a regular browser.
+   Inside the native app there's no download manager to catch a
+   normal browser download, so we save via Capacitor's Filesystem
+   plugin and open the native Save/Share sheet instead. In a plain
+   browser this just falls back to XLSX.writeFile as usual.
+   ============================================================ */
+function isNativeApp(){
+  return !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+}
+async function saveWorkbook(wb, filename){
+  if(typeof XLSX==='undefined'){ toast('Export library still loading, try again shortly','err'); return; }
+  if(!isNativeApp()){ XLSX.writeFile(wb, filename); return; }
+  try{
+    const base64 = XLSX.write(wb, { bookType:'xlsx', type:'base64' });
+    const plugins = window.Capacitor.Plugins || {};
+    const { Filesystem, Share } = plugins;
+    if(!Filesystem){ XLSX.writeFile(wb, filename); return; }
+    const result = await Filesystem.writeFile({ path: filename, data: base64, directory:'DOCUMENTS', recursive:true });
+    if(Share && result && result.uri){
+      Share.share({ title: filename, url: result.uri, dialogTitle: 'Save or share ' + filename }).catch(()=>{});
+    }
+    toast('Saved '+filename, 'ok');
+  }catch(e){
+    console.error('Native export failed, falling back:', e);
+    XLSX.writeFile(wb, filename);
+  }
+}
+function exportStocktake(session){
+  const rows = session.counts.map(c=>({ Barcode:c.barcode, Item:c.name, Counted:c.counted, System:c.system??'', Difference: c.system!=null? c.counted-c.system : '' }));
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Stocktake');
+  saveWorkbook(wb, `stocktake-${new Date(session.startedAt).toISOString().slice(0,10)}.xlsx`);
+}
+
+/* ============================================================
+   PRICE LABELS
+   ============================================================ */
+function renderLabelPicker(){
+  const el = document.getElementById('labelPicker');
+  if(!state.items.length){ el.innerHTML = `<div class="empty"><p>Add items to your inventory first.</p></div>`; return; }
+  el.innerHTML = state.items.map(i=>`
+    <div class="checklist-row">
+      <input type="checkbox" ${ui.labelSelection.has(i.id)?'checked':''} onchange="toggleLabelSelect('${i.id}')">
+      <div class="info"><div class="name">${escapeHtml(i.name)}</div><div class="meta">${money(i.price)} · ${escapeHtml(i.barcode||'no barcode')}</div></div>
+    </div>`).join('');
+}
+function toggleLabelSelect(id){
+  if(ui.labelSelection.has(id)) ui.labelSelection.delete(id); else ui.labelSelection.add(id);
+}
+function toggleSelectAllLabels(){
+  if(ui.labelSelection.size === state.items.length){ ui.labelSelection.clear(); }
+  else { state.items.forEach(i=>ui.labelSelection.add(i.id)); }
+  renderLabelPicker();
+}
+function exportLabels(){
+  const chosen = state.items.filter(i=>ui.labelSelection.has(i.id));
+  if(!chosen.length){ toast('Select at least one item','err'); return; }
+  const rows = chosen.map(i=>({ Name:i.name, Barcode:i.barcode, Price: money(i.price), Category:i.category }));
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Price Labels');
+  saveWorkbook(wb, 'price-labels.xlsx');
+}
+
+/* ============================================================
+   STATS
+   ============================================================ */
+let chartRefs = {};
+function renderStats(){
+  if(typeof Chart==='undefined'){ setTimeout(renderStats, 200); return; }
+  const byCat = {};
+  state.items.forEach(i=>{ byCat[i.category] = byCat[i.category]||{stock:0,value:0}; byCat[i.category].stock+=i.stock; byCat[i.category].value+=i.stock*i.price; });
+  const labels = Object.keys(byCat);
+  const palette = ['#F2A93B','#2F6F6B','#C1502E','#3C4757','#8C6E4A','#5C7A8A'];
+
+  drawChart('chartCategory','bar', labels, [{ label:'Units', data:labels.map(l=>byCat[l].stock), backgroundColor: labels.map((_,i)=>palette[i%palette.length]) }]);
+  drawChart('chartValue','doughnut', labels, [{ data:labels.map(l=>byCat[l].value), backgroundColor: labels.map((_,i)=>palette[i%palette.length]) }]);
+
+  const ok = state.items.filter(i=>i.stock>i.threshold).length;
+  const low = state.items.filter(i=>i.stock<=i.threshold && i.stock>0).length;
+  const out = state.items.filter(i=>i.stock<=0).length;
+  drawChart('chartHealth','doughnut', ['Healthy','Low','Out'], [{ data:[ok,low,out], backgroundColor:['#2F6F6B','#F2A93B','#C1502E'] }]);
+}
+function drawChart(canvasId, type, labels, datasets){
+  if(chartRefs[canvasId]) chartRefs[canvasId].destroy();
+  const ctx = document.getElementById(canvasId).getContext('2d');
+  chartRefs[canvasId] = new Chart(ctx, { type, data:{ labels, datasets }, options:{ plugins:{ legend:{ position:'bottom', labels:{ color: getComputedStyle(document.body).color, boxWidth:12, font:{size:11} } } }, scales: type==='bar'?{ x:{ ticks:{color:getComputedStyle(document.body).color} }, y:{ ticks:{color:getComputedStyle(document.body).color} } }:{} } });
+}
+
+/* ============================================================
+   SETTINGS
+   ============================================================ */
+function renderSettings(){
+  document.getElementById('settingCurrency').value = state.settings.currency;
+  document.getElementById('settingThreshold').value = state.settings.defaultThreshold;
+  renderCategoryManage();
+}
+async function saveSettings(){
+  state.settings.currency = document.getElementById('settingCurrency').value.trim() || '$';
+  state.settings.defaultThreshold = Number(document.getElementById('settingThreshold').value)||0;
+  await saveSettingsToStore();
+  toast('Settings saved','ok');
+  renderHome();
+}
+function renderCategoryManage(){
+  const el = document.getElementById('categoryManageList');
+  el.innerHTML = state.categories.map(c=>`
+    <div class="item-row"><div class="info"><div class="name">${escapeHtml(c)}</div></div><button class="btn btn-outline btn-sm" onclick="removeCategory('${escapeHtml(c)}')">Remove</button></div>
+  `).join('');
+}
+async function addCategory(){
+  const inp = document.getElementById('newCategoryInput');
+  const name = inp.value.trim();
+  if(!name) return;
+  if(state.categories.includes(name)){ toast('Category already exists','err'); return; }
+  state.categories.push(name);
+  await saveCategories();
+  inp.value='';
+  renderCategoryManage();
+  toast('Category added','ok');
+}
+async function removeCategory(name){
+  if(state.items.some(i=>i.category===name)){ toast('Move items out of this category first','err'); return; }
+  state.categories = state.categories.filter(c=>c!==name);
+  await saveCategories();
+  renderCategoryManage();
+}
+function exportAllData(){
+  const ws = XLSX.utils.json_to_sheet(state.items.map(i=>({ Name:i.name, Barcode:i.barcode, Category:i.category, Stock:i.stock, Price:i.price, Threshold:i.threshold })));
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Inventory');
+  saveWorkbook(wb, 'stockify-inventory.xlsx');
+}
+
+/* ============================================================
+   PULL TO REFRESH
+   Reloads state from local storage and re-renders whatever view
+   is currently open. There's no server to sync with — this is a
+   local-first app — but it re-reads storage (useful if another
+   tab/instance changed it) and gives the familiar refresh gesture
+   people expect on a list screen.
+   ============================================================ */
+(function initPullToRefresh(){
+  const mainEl = document.querySelector('main');
+  const indicator = document.getElementById('ptrIndicator');
+  let startY = 0, pulling = false, triggered = false;
+
+  mainEl.addEventListener('touchstart', (e)=>{
+    if(mainEl.scrollTop <= 0){ startY = e.touches[0].clientY; pulling = true; triggered = false; }
+  }, { passive:true });
+
+  mainEl.addEventListener('touchmove', (e)=>{
+    if(!pulling) return;
+    const dy = e.touches[0].clientY - startY;
+    if(dy > 0 && mainEl.scrollTop <= 0){
+      const pull = Math.min(dy, 90);
+      indicator.style.height = pull + 'px';
+      indicator.classList.add('visible');
+      if(pull > 60 && !triggered){ triggered = true; if(navigator.vibrate) navigator.vibrate(15); }
+    }
+  }, { passive:true });
+
+  mainEl.addEventListener('touchend', async ()=>{
+    if(!pulling) return;
+    pulling = false;
+    if(triggered){
+      const spinner = indicator.querySelector('.ptr-spinner');
+      await loadState();
+      const active = document.querySelector('.view.active');
+      if(active) renderCurrentView(active.id.replace('view-',''));
+      spinner.classList.add('settle');
+      setTimeout(()=>{ spinner.classList.remove('settle'); }, 400);
+    }
+    indicator.style.height = '0px';
+    indicator.classList.remove('visible');
+  }, { passive:true });
+})();
+function renderCurrentView(name){
+  if(name==='home') renderHome();
+  else if(name==='inventory') renderInventory();
+  else if(name==='stocktake') renderStocktakeView();
+  else if(name==='labels') renderLabelPicker();
+  else if(name==='stats') renderStats();
+  else if(name==='settings') renderSettings();
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+async function init(){
+  await loadState();
+  applyTheme();
+  buildKeypad();
+  if(state.settings.pin){
+    document.getElementById('lockTitle').textContent='Welcome back';
+    document.getElementById('lockSub').textContent='Enter your PIN';
+  }
+  renderHome();
+}
+init();
+</script>
+</body>
+</html>
